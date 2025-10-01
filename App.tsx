@@ -2,8 +2,26 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import ContentDisplay from './components/ContentDisplay';
 import { STUDY_TOPICS, Chapter } from './constants';
-import { generateStudyGuide } from './services/geminiService';
-import { BookIcon } from './components/icons';
+import { generateStudyGuide, isApiKeySet } from './services/geminiService';
+import { BookIcon, AlertTriangleIcon } from './components/icons';
+
+const ApiKeyErrorDisplay: React.FC = () => (
+  <div className="flex items-center justify-center h-screen bg-red-50 text-red-800 font-sans">
+    <div className="text-center p-8 bg-white rounded-xl shadow-2xl border-2 border-red-200 max-w-lg mx-4">
+      <div className="flex justify-center mb-4">
+        <AlertTriangleIcon className="text-red-500" />
+      </div>
+      <h1 className="text-2xl font-bold text-red-900 mb-2">Configuration Error</h1>
+      <p className="text-red-700 leading-relaxed">
+        The application is missing the required API key for the Gemini API. This is not an error with the application itself, but with its current deployment configuration.
+      </p>
+      <p className="mt-4 text-sm text-red-600">
+        To fix this, please ensure the <code>API_KEY</code> environment variable is set correctly in your deployment settings (e.g., Netlify, Vercel, etc.).
+      </p>
+    </div>
+  </div>
+);
+
 
 const App: React.FC = () => {
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
@@ -11,6 +29,10 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedChapters, setExpandedChapters] = useState<string[]>([]);
+
+  if (!isApiKeySet) {
+    return <ApiKeyErrorDisplay />;
+  }
 
   const fetchContent = useCallback(async (topic: string) => {
     setIsLoading(true);

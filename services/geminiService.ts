@@ -1,12 +1,21 @@
 import { GoogleGenAI } from "@google/genai";
 
-if (!process.env.API_KEY) {
-  throw new Error("API_KEY environment variable is not set");
+const apiKey = process.env.API_KEY;
+let ai: GoogleGenAI | null = null;
+
+if (apiKey) {
+  ai = new GoogleGenAI({ apiKey });
+} else {
+  console.error("API_KEY environment variable is not set. The application will not function correctly.");
 }
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+export const isApiKeySet = !!apiKey;
 
 export const generateStudyGuide = async (topic: string): Promise<string> => {
+  if (!ai) {
+    throw new Error("Gemini AI client is not initialized. Check API_KEY.");
+  }
+
   const systemInstruction = `You are an expert medical educator specializing in integrating modern diagnostics with naturopathic principles for Bachelor of Naturopathy and Yogic Sciences (BNYS) students. Your goal is to provide comprehensive, well-structured, and easy-to-understand study guides.`;
 
   const userPrompt = `
@@ -62,6 +71,10 @@ export const generateStudyGuide = async (topic: string): Promise<string> => {
 };
 
 export const defineWord = async (term: string): Promise<string> => {
+  if (!ai) {
+    throw new Error("Gemini AI client is not initialized. Check API_KEY.");
+  }
+
   const systemInstruction = `You are a helpful medical dictionary. Your task is to provide clear, concise definitions.`;
   const userPrompt = `Define the medical or scientific term "${term}" in a way that is easy for a student of naturopathy and yogic sciences to understand. Keep the definition to a few sentences.`;
 
