@@ -2,8 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import ContentDisplay from './components/ContentDisplay';
 import { STUDY_TOPICS, Chapter } from './constants';
-import { generateStudyGuide, isApiKeySet } from './services/geminiService';
+import { generateStudyGuide, checkApiKey } from './services/geminiService';
 import { BookIcon, AlertTriangleIcon } from './components/icons';
+import LoadingSpinner from './components/LoadingSpinner';
 
 const ApiKeyErrorDisplay: React.FC = () => (
   <div className="flex items-center justify-center h-screen bg-red-50 text-red-800 font-sans">
@@ -16,23 +17,27 @@ const ApiKeyErrorDisplay: React.FC = () => (
         The application is missing the required API key for the Gemini API. This is not an error with the application itself, but with its current deployment configuration.
       </p>
       <p className="mt-4 text-sm text-red-600">
-        To fix this, please ensure the <code>NEXT_PUBLIC_API_KEY</code> environment variable is set correctly in your deployment settings (e.g., Netlify, Vercel, etc.).
+        To fix this, please ensure the <code>API_KEY</code> environment variable is set correctly in your deployment settings (e.g., Netlify, Vercel, etc.).
       </p>
     </div>
   </div>
 );
 
+type ApiKeyStatus = 'checking' | 'valid' | 'invalid';
 
 const App: React.FC = () => {
+  const [apiKeyStatus, setApiKeyStatus] = useState<ApiKeyStatus>('checking');
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [generatedContent, setGeneratedContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedChapters, setExpandedChapters] = useState<string[]>([]);
 
-  if (!isApiKeySet) {
-    return <ApiKeyErrorDisplay />;
-  }
+  useEffect(() => {
+    checkApiKey().then(isValid => {
+      setApiKeyStatus(isValid ? 'valid' : 'invalid');
+    });
+  }, []);
 
   const fetchContent = useCallback(async (topic: string) => {
     setIsLoading(true);
@@ -50,10 +55,10 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedTopic) {
+    if (selectedTopic && apiKeyStatus === 'valid') {
       fetchContent(selectedTopic);
     }
-  }, [selectedTopic, fetchContent]);
+  }, [selectedTopic, fetchContent, apiKeyStatus]);
 
   const handleSelectTopic = (topic: string) => {
     setSelectedTopic(topic);
@@ -70,6 +75,18 @@ const App: React.FC = () => {
         : [...prev, chapterTitle]
     );
   };
+  
+  if (apiKeyStatus === 'checking') {
+    return (
+        <div className="flex items-center justify-center h-screen bg-slate-50">
+            <LoadingSpinner />
+        </div>
+    );
+  }
+
+  if (apiKeyStatus === 'invalid') {
+    return <ApiKeyErrorDisplay />;
+  }
 
   return (
     <div className="flex h-screen bg-slate-100 font-sans">

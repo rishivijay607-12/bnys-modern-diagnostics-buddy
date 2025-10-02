@@ -1,20 +1,50 @@
 import { GoogleGenAI } from "@google/genai";
 
-const apiKey = process.env.NEXT_PUBLIC_API_KEY;
 let ai: GoogleGenAI | null = null;
+let apiKeyInitializationPromise: Promise<boolean> | null = null;
 
-if (apiKey) {
-  ai = new GoogleGenAI({ apiKey });
-} else {
-  console.error("NEXT_PUBLIC_API_KEY environment variable is not set. The application will not function correctly.");
+const initializeApiKey = async (): Promise<boolean> => {
+  try {
+    const response = await fetch('/api/get-key');
+    if (!response.ok) {
+      console.error('Failed to fetch API key from server.');
+      return false;
+    }
+    const data = await response.json();
+    const apiKey = data.apiKey;
+
+    if (apiKey) {
+      ai = new GoogleGenAI({ apiKey });
+      return true;
+    } else {
+      console.error("API_KEY was not provided by the server endpoint.");
+      return false;
+    }
+  } catch (error) {
+    console.error("Error during API key initialization:", error);
+    return false;
+  }
+};
+
+const ensureAiInitialized = async (): Promise<void> => {
+  if (!apiKeyInitializationPromise) {
+    apiKeyInitializationPromise = initializeApiKey();
+  }
+  const isInitialized = await apiKeyInitializationPromise;
+  if (!isInitialized || !ai) {
+    throw new Error("Gemini AI client is not initialized. Check the server logs and ensure API_KEY is set in your deployment environment.");
+  }
+};
+
+export const checkApiKey = (): Promise<boolean> => {
+    if (!apiKeyInitializationPromise) {
+        apiKeyInitializationPromise = initializeApiKey();
+    }
+    return apiKeyInitializationPromise;
 }
 
-export const isApiKeySet = !!apiKey;
-
 export const generateStudyGuide = async (topic: string): Promise<string> => {
-  if (!ai) {
-    throw new Error("Gemini AI client is not initialized. Check NEXT_PUBLIC_API_KEY.");
-  }
+  await ensureAiInitialized();
 
   const systemInstruction = `You are an expert medical educator specializing in integrating modern diagnostics with naturopathic principles for Bachelor of Naturopathy and Yogic Sciences (BNYS) students. Your goal is to provide comprehensive, well-structured, and easy-to-understand study guides.`;
 
@@ -56,7 +86,7 @@ export const generateStudyGuide = async (topic: string): Promise<string> => {
   `;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await ai!.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: userPrompt,
         config: {
@@ -71,15 +101,13 @@ export const generateStudyGuide = async (topic: string): Promise<string> => {
 };
 
 export const defineWord = async (term: string): Promise<string> => {
-  if (!ai) {
-    throw new Error("Gemini AI client is not initialized. Check NEXT_PUBLIC_API_KEY.");
-  }
+  await ensureAiInitialized();
 
   const systemInstruction = `You are a helpful medical dictionary. Your task is to provide clear, concise definitions.`;
   const userPrompt = `Define the medical or scientific term "${term}" in a way that is easy for a student of naturopathy and yogic sciences to understand. Keep the definition to a few sentences.`;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await ai!.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: userPrompt,
       config: {
