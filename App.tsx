@@ -16,7 +16,7 @@ const ApiKeyErrorDisplay: React.FC = () => (
         The application is missing the required API key for the Gemini API. This is not an error with the application itself, but with its current deployment configuration.
       </p>
       <p className="mt-4 text-sm text-red-600">
-        To fix this, please ensure the <code>API_KEY</code> environment variable is set correctly in your deployment settings (e.g., Netlify, Vercel, etc.).
+        To fix this, please ensure the <code>NEXT_PUBLIC_API_KEY</code> environment variable is set correctly in your deployment settings (e.g., Netlify, Vercel, etc.).
       </p>
     </div>
   </div>

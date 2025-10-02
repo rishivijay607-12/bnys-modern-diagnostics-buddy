@@ -1,19 +1,19 @@
 import { GoogleGenAI } from "@google/genai";
 
-const apiKey = process.env.API_KEY;
+const apiKey = process.env.NEXT_PUBLIC_API_KEY;
 let ai: GoogleGenAI | null = null;
 
 if (apiKey) {
   ai = new GoogleGenAI({ apiKey });
 } else {
-  console.error("API_KEY environment variable is not set. The application will not function correctly.");
+  console.error("NEXT_PUBLIC_API_KEY environment variable is not set. The application will not function correctly.");
 }
 
 export const isApiKeySet = !!apiKey;
 
 export const generateStudyGuide = async (topic: string): Promise<string> => {
   if (!ai) {
-    throw new Error("Gemini AI client is not initialized. Check API_KEY.");
+    throw new Error("Gemini AI client is not initialized. Check NEXT_PUBLIC_API_KEY.");
   }
 
   const systemInstruction = `You are an expert medical educator specializing in integrating modern diagnostics with naturopathic principles for Bachelor of Naturopathy and Yogic Sciences (BNYS) students. Your goal is to provide comprehensive, well-structured, and easy-to-understand study guides.`;
@@ -72,7 +72,7 @@ export const generateStudyGuide = async (topic: string): Promise<string> => {
 
 export const defineWord = async (term: string): Promise<string> => {
   if (!ai) {
-    throw new Error("Gemini AI client is not initialized. Check API_KEY.");
+    throw new Error("Gemini AI client is not initialized. Check NEXT_PUBLIC_API_KEY.");
   }
 
   const systemInstruction = `You are a helpful medical dictionary. Your task is to provide clear, concise definitions.`;
